@@ -136,18 +136,6 @@
 --connect jdbc:mysql://qphone03:3306/qianfeng \
 --username root \
 --password 123456 \
---table paper \
---hive-import \
---hive-table qphone_exam_sys_ods.paper \
---delete-target-dir \
---fields-terminated-by '\001' \
---num-mappers 1 \
---as-textfile
-
-/opt/apps/sqoop-1.4.6-cdh5.7.6/bin/sqoop import \
---connect jdbc:mysql://qphone03:3306/qianfeng \
---username root \
---password 123456 \
 --table paper_question \
 --hive-import \
 --hive-table qphone_exam_sys_ods.paper_question \
@@ -156,13 +144,29 @@
 --num-mappers 1 \
 --as-textfile
 
+# 分区导入
+# -------------先将数据导入到临时表
 /opt/apps/sqoop-1.4.6-cdh5.7.6/bin/sqoop import \
 --connect jdbc:mysql://qphone03:3306/qianfeng \
 --username root \
 --password 123456 \
---table answer_paper \
 --hive-import \
---hive-table qphone_exam_sys_ods.answer_paper \
+--hive-table qphone_exam_sys_ods.answer_paper_tmp \
+--delete-target-dir \
+--fields-terminated-by '\001' \
+--num-mappers 1 \
+--as-textfile \
+--query "select id, paper_id, examinee_id, examinee_name, examinee_num, class_id, class_name, start_date, exam_time, submit_time, objective_mark, subject_mark, subject_smart_mark, check_state, teacher_id, objective_answer_json, subject_answer_json, subject_check_json, objective_check_json, evaluation_opinions, exam_id from answer_paper where \$CONDITIONS" \
+--target-dir '/user/hive/warehouse/qphone_exam_sys_ods.db/paper_answer_tmp'
+
+/opt/apps/sqoop-1.4.6-cdh5.7.6/bin/sqoop import \
+--connect jdbc:mysql://qphone03:3306/qianfeng \
+--username root \
+--password 123456 \
+--query "select id, is_objective, is_subjective, creator_id, creator_name, create_time, exam_id from paper where \$CONDITIONS" \
+--target-dir '/user/hive/warehouse/qphone_exam_sys_ods.db/paper_tmp' \
+--hive-import \
+--hive-table qphone_exam_sys_ods.paper_tmp \
 --delete-target-dir \
 --fields-terminated-by '\001' \
 --num-mappers 1 \
